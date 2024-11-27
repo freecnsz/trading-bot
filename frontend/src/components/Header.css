@@ -1,0 +1,47 @@
+/* src/components/Header.css */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #282c34;
+    color: white;
+  }
+  
+  .header-left h1 {
+    font: bold 24px Arial, sans-serif;
+    font-size: 24px;
+    margin: 0;
+  }
+  
+/* This positions the header information at the top right */
+.header-info {
+  position: fixed;          /* Keeps it in place while scrolling */
+  top: 10px;                /* Adjusts the distance from the top */
+  right: 10px;              /* Adjusts the distance from the right */
+  width: 120px;             /* Sets width of the square container */
+  height: 80px;             /* Sets height of the square container */
+  background-color: #1a1a26; /* Dark background color */
+  color: #f3ba2f;           /* Text color */
+  display: flex;            /* Flexbox for vertical layout */
+  flex-direction: column;   /* Stacks the children vertically */
+  justify-content: center;  /* Centers the content vertically */
+  align-items: center;      /* Centers the content horizontally */
+  font-size: 14px;          /* Adjusts font size */
+  font-weight: bold;        /* Makes the text bold */
+  padding: 5px;             /* Adds padding inside the square */
+  z-index: 1;               /* Ensures the element is on top of other content */
+  border-radius: 8px;       /* Slightly rounded corners */
+}
+
+/* Styling for the username */
+.header-info .username {
+  font-size: 16px;         /* Larger font size for the name */
+  margin-bottom: 5px;      /* Adds space between name and balance */
+}
+
+
+/* Styling for the balance */
+.header-info .balance {
+  font-size: 12px;         /* Smaller font size for the balance */
+}
