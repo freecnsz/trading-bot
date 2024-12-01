@@ -18,71 +18,139 @@ const App = () => {
   const networks = ["MAINNET", "TESTNET"];
   const [selectedCoin, setSelectedCoin] = useState(availableCoins[0]);
   const [selectedInterval, setSelectedInterval] = useState("1m");
-  const [selectedNetwork, setSelectedNetwork] = useState("TESTNET"); // Default to MAINNET
-  const [isTrading, setIsTrading] = useState(false); // Tracks trading state
-  const [initialPrice, setInitialPrice] = useState(0); // Tracks price at the start of trade
-  const [timeElapsed, setTimeElapsed] = useState(0); // Tracks elapsed time
-  const [isInfoVisible, setIsInfoVisible] = useState(false); // Toggles visibility of trade info
-  const [trades, setTrades] = useState([]); // Stores trade history
+  const [selectedNetwork, setSelectedNetwork] = useState("MAINNET");
+  const [isTrading, setIsTrading] = useState(false);
+  const [initialPrice] = useState(0);
+  const [, setTimeElapsed] = useState(0);
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+  const [trades, setTrades] = useState([]);
+  const [socket, setSocket] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [notification, setNotification] = useState(""); // Notification state
+  const [balance, setBalance] = useState(10000);
 
+  const stopTrade = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("http://localhost:8000/trade/stop_trade", {
+        method: "POST",
+      });
 
-  // Handler for Start/Stop Trade
-  const handleTradeToggle = () => {
-    if (isTrading) {
-      // Stop trade
+      if (!response.ok) {
+        throw new Error("Failed to stop trade");
+      }
+
+      const responseData = await response.json();
+      console.log("API Response:", responseData);
+      setNotification("Trade stopped successfully!");
+    } catch (error) {
+      console.error("Error stopping trade:", error);
+      setNotification("An error occurred while stopping the trade.");
+    } finally {
       setIsTrading(false);
-    } else {
-      // Start trade
-      setInitialPrice((Math.random() * 50000 + 1000).toFixed(2)); // Set initial price randomly
-      setIsTrading(true);
-      setIsInfoVisible(true);
-      setTimeElapsed(0); // Reset timer
+      setIsLoading(false);
     }
   };
 
-  // Simulate trades and updates while trading
+  const handleTradeToggle = async () => {
+    setIsInfoVisible(true);
+    setIsLoading(true);
+    if (isTrading) {
+      await stopTrade();
+      if (socket) {
+        socket.close();
+        console.log("WebSocket disconnected.");
+      }
+      setSocket(null);
+      setIsTrading(false);
+    } else {
+      try {
+        const response = await fetch(
+          `http://localhost:8000/trade/start_trade?symbol=${selectedCoin.toLowerCase()}&interval=${selectedInterval}`,
+          { method: "POST" }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to start trade");
+        }
+
+        const responseData = await response.json();
+        console.log("API Response:", responseData);
+        setNotification("Trade started successfully!");
+
+        const newSocket = new WebSocket("ws://localhost:8765");
+        newSocket.onopen = () => console.log("WebSocket connected.");
+        newSocket.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          console.log("WebSocket message:", data);
+
+          const newTrade = {
+            id: trades.length + 1,
+            coin: selectedCoin,
+            type: data.action.toLocaleString().toLowerCase(),
+            price: data.price,
+            amount: data.amount,
+            interval: selectedInterval,
+            timestamp: new Date(data.timestamp).toLocaleString(),
+          };
+          setTrades((prevTrades) => [...prevTrades, newTrade]);
+          setBalance(data.balance);
+        };
+        newSocket.onerror = (error) => console.error("WebSocket error:", error);
+        newSocket.onclose = () => console.log("WebSocket disconnected.");
+        setSocket(newSocket);
+        setIsTrading(true);
+        setTimeElapsed(0);
+      } catch (error) {
+        console.error("Error starting trade:", error);
+        setNotification("An error occurred while starting the trade.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleCoinChange = (e) => {
+    setSelectedCoin(e.target.value);
+    stopTrade();
+  };
+
+  const handleIntervalChange = (e) => {
+    setSelectedInterval(e.target.value);
+    stopTrade();
+  };
+
   useEffect(() => {
     let interval;
     if (isTrading) {
       interval = setInterval(() => {
-        // Placeholder trading logic: random buy/sell
-        const newTrade = {
-          id: trades.length + 1,
-          coin: selectedCoin,
-          interval: selectedInterval,
-          type: Math.random() > 0.5 ? "buy" : "sell", // Random for demo (Buy or Sell)
-          price: (Math.random() * 50000 + 1000).toFixed(2), // Random price
-          timestamp: new Date().toLocaleString(),
-        };
-
-        setTrades((prevTrades) => [...prevTrades, newTrade]);
-        setTimeElapsed((prevTime) => prevTime + 1); // Increment timer
-      }, 5000); // Trade happens every 5 seconds
+        setTimeElapsed((prevTime) => prevTime + 1);
+      }, 1000);
     }
+    return () => clearInterval(interval);
+  }, [isTrading]);
 
-    return () => clearInterval(interval); // Cleanup interval on stop
-  }, [isTrading, selectedCoin, selectedInterval, trades.length]);
-
-  // Calculate profit/loss for each trade
-  const calculateProfitLoss = (price) => {
-    const diff = price - initialPrice;
-    const percentChange = ((diff / initialPrice) * 100).toFixed(2);
-    return { percentChange, profit: diff > 0 };
+  const calculateProfitLoss = (currentPrice) => {
+    const percentChange = (
+      ((currentPrice - initialPrice) / initialPrice) *
+      100
+    ).toFixed(2);
+    const profit = percentChange > 0;
+    return { percentChange, profit };
   };
 
   return (
     <div className="app">
-      <Header username="JohnDoe" balance="1000" />
+      <Header username="Alper Özcan" balance={balance} />
       <div className="main-container">
         <div className="chart-section">
           <div className="chart-and-editor">
             <div className="chart-container">
               <div className="selectors">
-                {/* Dropdown to select coin */}
                 <select
                   className="coin-selector"
                   value={selectedCoin}
-                  onChange={(e) => setSelectedCoin(e.target.value)}
+                  onChange={(e) => handleCoinChange(e)}
                 >
                   {availableCoins.map((coin) => (
                     <option key={coin} value={coin}>
@@ -90,12 +158,10 @@ const App = () => {
                     </option>
                   ))}
                 </select>
-
-                {/* Dropdown to select interval */}
                 <select
                   className="interval-selector"
                   value={selectedInterval}
-                  onChange={(e) => setSelectedInterval(e.target.value)}
+                  onChange={(e) => handleIntervalChange(e)}
                 >
                   <option value="1m">1 Minute</option>
                   <option value="5m">5 Minutes</option>
@@ -103,8 +169,6 @@ const App = () => {
                   <option value="1h">1 Hour</option>
                   <option value="1d">1 Day</option>
                 </select>
-
-                {/* Dropdown to select network */}
                 <select
                   className="network-selector"
                   value={selectedNetwork}
@@ -122,27 +186,27 @@ const App = () => {
                 interval={selectedInterval}
                 network={selectedNetwork}
               />
-
-              {/* Start/Stop Trade Button */}
               <div className="trade-buttons">
                 <button
                   className={`toggle-info-button ${isInfoVisible ? "up" : ""}`}
-                  onClick={() => {
-                    isInfoVisible
-                      ? setIsInfoVisible(false)
-                      : setIsInfoVisible(true);
-                  }}
+                  onClick={() => setIsInfoVisible((prev) => !prev)}
                 ></button>
-
                 <button
                   className="start-trade-button"
                   style={{
-                    backgroundColor: isTrading ? "red" : "#0fff6b", // Red when trading, green otherwise
-                    color: "white", // Ensure text remains visible
+                    backgroundColor: isTrading ? "red" : "#0fff6b",
+                    color: "white",
                   }}
                   onClick={handleTradeToggle}
+                  disabled={isLoading} // Disable button during loading
                 >
-                  {isTrading ? "Stop Trade" : "Start Trade"}
+                  {isLoading ? (
+                    <span className="spinner"></span> // Spinner component
+                  ) : isTrading ? (
+                    "Stop Trade"
+                  ) : (
+                    "Start Trade"
+                  )}
                 </button>
               </div>
             </div>
@@ -150,7 +214,6 @@ const App = () => {
               <IndicatorEditor />
             </div>
           </div>
-
           <div className="separator"></div>
           <div className="trade-info">
             {isInfoVisible && (
@@ -203,6 +266,11 @@ const App = () => {
         </div>
       </div>
       <Footer />
+      {notification && (
+        <div className="notification">
+          <p>{notification}</p>
+        </div>
+      )}
     </div>
   );
 };
