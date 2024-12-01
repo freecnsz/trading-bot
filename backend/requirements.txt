@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]  # FastAPI ile çalıştırma için gerekli
+pandas
+websockets
+pydantic
+ta  # Teknik analiz için kullanılan kütüphane
+binance  # Binance API'si için

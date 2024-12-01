@@ -9,8 +9,8 @@ const Header = ({ username, balance }) => {
         <h1>Trading Bot</h1>
       </div>
       <div className="header-info">
-    <span className="username">JohnDoe</span>
-    <span className="balance">Balance: $1000</span>
+    <span className="username">{username}</span>
+    <span className="balance">${balance}</span>
   </div>
     </header>
   );
