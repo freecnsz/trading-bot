@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+websockets
+numpy
+pandas
+ta
+python-binance
