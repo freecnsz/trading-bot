@@ -1,7 +1,7 @@
 fastapi
-uvicorn
-websockets
-numpy
+uvicorn[standard]  # FastAPI ile çalıştırma için gerekli
 pandas
-ta
-python-binance
+websockets
+pydantic
+ta  # Teknik analiz için kullanılan kütüphane
+binance  # Binance API'si için
