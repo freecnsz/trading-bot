@@ -20,7 +20,6 @@ const App = () => {
   const [selectedInterval, setSelectedInterval] = useState("1m");
   const [selectedNetwork, setSelectedNetwork] = useState("MAINNET");
   const [isTrading, setIsTrading] = useState(false);
-  const [initialPrice] = useState(0);
   const [, setTimeElapsed] = useState(0);
   const [isInfoVisible, setIsInfoVisible] = useState(false);
   const [trades, setTrades] = useState([]);
@@ -46,6 +45,7 @@ const App = () => {
     } catch (error) {
       console.error("Error stopping trade:", error);
       setNotification("An error occurred while stopping the trade.");
+      setTimeout(() => setNotification(null), 3000);
     } finally {
       setIsTrading(false);
       setIsLoading(false);
@@ -77,6 +77,7 @@ const App = () => {
         const responseData = await response.json();
         console.log("API Response:", responseData);
         setNotification("Trade started successfully!");
+        setTimeout(() => setNotification(null), 3000);
 
         const newSocket = new WebSocket("ws://localhost:8765");
         newSocket.onopen = () => console.log("WebSocket connected.");
@@ -86,11 +87,12 @@ const App = () => {
 
           const newTrade = {
             id: trades.length + 1,
-            coin: selectedCoin,
+            coin: data.symbol,
             type: data.action.toLocaleString().toLowerCase(),
             price: data.price,
             amount: data.amount,
             interval: selectedInterval,
+            profit_loss: data.profit_loss,
             timestamp: new Date(data.timestamp).toLocaleString(),
           };
           setTrades((prevTrades) => [...prevTrades, newTrade]);
@@ -104,6 +106,7 @@ const App = () => {
       } catch (error) {
         console.error("Error starting trade:", error);
         setNotification("An error occurred while starting the trade.");
+        setTimeout(() => setNotification(null), 3000);
       } finally {
         setIsLoading(false);
       }
@@ -129,15 +132,6 @@ const App = () => {
     }
     return () => clearInterval(interval);
   }, [isTrading]);
-
-  const calculateProfitLoss = (currentPrice) => {
-    const percentChange = (
-      ((currentPrice - initialPrice) / initialPrice) *
-      100
-    ).toFixed(2);
-    const profit = percentChange > 0;
-    return { percentChange, profit };
-  };
 
   return (
     <div className="app">
@@ -226,38 +220,42 @@ const App = () => {
                       <th>ID</th>
                       <th>Coin</th>
                       <th>Type</th>
-                      <th>Price</th>
+                      <th>Price ($)</th>
                       <th>Interval</th>
                       <th>Profit/Loss (%)</th>
                       <th>Timestamp</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {trades.map((trade) => {
-                      const { percentChange, profit } = calculateProfitLoss(
-                        trade.price
-                      );
-                      return (
-                        <tr key={trade.id}>
-                          <td>{trade.id}</td>
-                          <td>{trade.coin}</td>
-                          <td>
+                    {trades.map((trade) => (
+                      <tr key={trade.id}>
+                        <td>{trade.id}</td>
+                        <td>{trade.coin}</td>
+                        <td>
                             {trade.type === "buy" ? (
                               <span style={{ color: "green" }}>↑ Buy</span>
                             ) : (
                               <span style={{ color: "red" }}>↓ Sell</span>
                             )}
-                          </td>
-                          <td>{trade.price}</td>
-                          <td>{trade.interval}</td>
-                          <td style={{ color: profit ? "green" : "red" }}>
-                            {profit ? "+" : ""}
-                            {percentChange}%
-                          </td>
-                          <td>{trade.timestamp}</td>
-                        </tr>
-                      );
-                    })}
+                        </td>
+                        <td>{trade.price}</td>
+                        <td>{trade.interval}</td>
+                        <td>
+                          {trade.profit_los = 0 ? (
+                            <span>Firts Trade</span>
+                          ) : trade.profit_loss < 0 ? (
+                            <span style={{ color: "red" }}>
+                              {trade.profit_loss}
+                            </span>
+                          ) : (
+                            <span style={{ color: "green" }}>
+                              {trade.profit_loss}
+                            </span>
+                          )}
+                        </td>
+                        <td>{trade.timestamp}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

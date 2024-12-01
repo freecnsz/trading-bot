@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import "../App.css";
 
 const IndicatorEditor = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState(null);
+
   const [indicators, setIndicators] = useState([
     {
       name: "RSI",
@@ -93,7 +96,9 @@ const IndicatorEditor = () => {
               <input
                 type="number"
                 value={indicator.oversold}
-                onChange={(e) => handleChange(index, "oversold", e.target.value)}
+                onChange={(e) =>
+                  handleChange(index, "oversold", e.target.value)
+                }
                 className="indicator-input"
               />
             </label>
@@ -116,7 +121,9 @@ const IndicatorEditor = () => {
               <input
                 type="number"
                 value={indicator.deviation}
-                onChange={(e) => handleChange(index, "deviation", e.target.value)}
+                onChange={(e) =>
+                  handleChange(index, "deviation", e.target.value)
+                }
                 className="indicator-input"
               />
             </label>
@@ -177,7 +184,9 @@ const IndicatorEditor = () => {
               <input
                 type="number"
                 value={indicator.deviation}
-                onChange={(e) => handleChange(index, "deviation", e.target.value)}
+                onChange={(e) =>
+                  handleChange(index, "deviation", e.target.value)
+                }
                 className="indicator-input"
               />
             </label>
@@ -189,11 +198,12 @@ const IndicatorEditor = () => {
   };
 
   const handleSave = async () => {
+    setIsLoading(true);
     const transformedIndicators = indicators
       .filter((indicator) => indicator.enabled) // Sadece aktif olanları dahil et
       .map((indicator) => {
         const formattedIndicator = { name: indicator.name };
-        
+
         if (indicator.name === "RSI") {
           formattedIndicator.period = indicator.period;
           formattedIndicator.overbought = indicator.overbought;
@@ -209,32 +219,42 @@ const IndicatorEditor = () => {
           formattedIndicator.period = indicator.period;
           formattedIndicator.deviation = indicator.deviation;
         }
-  
+
         return formattedIndicator;
       });
-  
+
     console.log("Formatted Indicators:", transformedIndicators);
-  
+
     try {
-      const response = await fetch("http://localhost:8000/strategy/set_strategy", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(transformedIndicators),
-      });
-  
+      const response = await fetch(
+        "http://localhost:8000/strategy/set_strategy",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(transformedIndicators),
+        }
+      );
+
       if (!response.ok) {
+        setNotification("Failed to save strategy");
+        setTimeout(() => setNotification(null), 3000);
         throw new Error("Failed to save strategy");
       }
-  
+
       const responseData = await response.json();
       console.log("API Response:", responseData);
+      setNotification("Strategy saved successfully!");
+      setTimeout(() => setNotification(null), 3000);
     } catch (error) {
       console.error("Error saving strategy:", error);
+      setNotification("An error occurred while saving the strategy.");
+      setTimeout(() => setNotification(null), 3000);
+    } finally {
+      setIsLoading(false);
     }
   };
-  
 
   return (
     <div className="indicator-editor">
@@ -261,16 +281,15 @@ const IndicatorEditor = () => {
               </label>
             </div>
             {indicator.enabled && !indicator.collapsed && (
-              <div>
-                {renderIndicatorSettings(indicator, index)}
-              </div>
+              <div>{renderIndicatorSettings(indicator, index)}</div>
             )}
           </div>
         ))}
       </div>
       <button className="save-button" onClick={handleSave}>
-        save
+        {isLoading ? <span className="spinner"></span> : "Save"}
       </button>
+      {notification && <div className="notification">{notification}</div>}
     </div>
   );
 };

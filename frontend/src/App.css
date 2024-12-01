@@ -386,6 +386,7 @@ footer {
   text-align: center;
 }
 
+
 .save-button {
   margin-left: auto;
   padding: 10px 20px;
@@ -423,33 +424,34 @@ footer {
 .notification {
   position: fixed;
   bottom: 20px;
-  right: 20px;
-  background-color: rgba(0, 0, 0, 0.8); /* Black with transparency */
+  left: 50%;
+  transform: translateX(-50%); /* Merkezi hizalama */
+  background-color: black;
   color: white;
   padding: 10px 20px;
   border-radius: 5px;
   font-size: 14px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  animation: fadeInOut 4s ease-in-out;
+  animation: fadeInOut 4s ease-in-out forwards;
 }
 
-/* Fade-in and Fade-out Animation for Notifications */
+/* Animasyon */
 @keyframes fadeInOut {
   0% {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateX(-50%) translateY(10px); /* Hafif yukarıdan görünür */
   }
   10% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(0);
   }
   90% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(0);
   }
   100% {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateX(-50%) translateY(-10px); /* Hafif yukarı kaybolur */
   }
 }
 
