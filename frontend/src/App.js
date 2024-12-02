@@ -115,12 +115,14 @@ const App = () => {
 
   const handleCoinChange = (e) => {
     setSelectedCoin(e.target.value);
-    stopTrade();
+    if (isTrading)
+      stopTrade();
   };
 
   const handleIntervalChange = (e) => {
     setSelectedInterval(e.target.value);
-    stopTrade();
+    if (isTrading)
+      stopTrade();
   };
 
   useEffect(() => {
