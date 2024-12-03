@@ -40,6 +40,8 @@ const App = () => {
       }
 
       const responseData = await response.json();
+      setBalance(responseData.balance);
+
       console.log("API Response:", responseData);
       setNotification("Trade stopped successfully!");
     } catch (error) {
@@ -64,6 +66,7 @@ const App = () => {
       setSocket(null);
       setIsTrading(false);
     } else {
+      setTrades([]);
       try {
         const response = await fetch(
           `http://localhost:8000/trade/start_trade?symbol=${selectedCoin.toLowerCase()}&interval=${selectedInterval}`,
@@ -86,7 +89,7 @@ const App = () => {
           console.log("WebSocket message:", data);
 
           const newTrade = {
-            id: trades.length + 1,
+            id : data.id,
             coin: data.symbol,
             type: data.action.toLocaleString().toLowerCase(),
             price: data.price,

@@ -10,13 +10,14 @@ balance = 10000  # Initial balance for the trading simulation
 positions = []   # Current open positions
 is_trading = False
 trading_task = None
+id = 0
 
 
 async def trading_logic(symbol, interval):
     """
     Core trading logic that streams data, calculates indicators using historical and live data, and executes trades.
     """
-    global balance, positions, is_trading
+    global balance, positions, is_trading, id
 
     # Binance Client for live data
     client = BinanceClient(symbol, interval)
@@ -48,7 +49,7 @@ async def trading_logic(symbol, interval):
         # Step 4: Calculate indicators
         indicators = calculate_indicators(historical_data, strategy)
         print(f"Indicators: {indicators}")
-        signal = generate_signal(historical_data, strategy, indicators)
+        signal = generate_signal(historical_data, indicators)
         print(f"Signal: {signal}")
 
         # Step 5: Execute trades based on the signal
@@ -66,6 +67,7 @@ async def trading_logic(symbol, interval):
 
             # Broadcast BUY action
             await broadcast_message({
+                "id": id,
                 "action": "BUY",
                 "symbol": symbol.upper(),
                 "price": live_data["close"],
@@ -75,6 +77,8 @@ async def trading_logic(symbol, interval):
                 "positions": positions,  # Send positions for better visibility
                 "profit_loss": unrealized_profit_loss_percent  # Potansiyel kar/zarar
             })
+
+            id += 1  # Increment the ID for broadcast messages
             
             print(f"BUY signal: Bought at {live_data['close']}, Amount: {amount}, Unrealized P/L: {unrealized_profit_loss_percent}, New Balance: {balance}")
 
@@ -89,6 +93,7 @@ async def trading_logic(symbol, interval):
 
             # Broadcast SELL action
             await broadcast_message({
+                "id": id,
                 "action": "SELL",
                 "symbol": symbol.upper(),
                 "price": sell_price,
@@ -98,6 +103,8 @@ async def trading_logic(symbol, interval):
                 "profit_loss": profit_loss_percent,
                 "positions": positions  # Send remaining positions
             })
+
+            id += 1 # Increment the ID for broadcast messages
             
             print(f"SELL signal: Sold at {sell_price}, Profit/Loss: {profit_loss_percent}, New Balance: {balance}")
 
@@ -124,13 +131,14 @@ def stop_trading():
     """
     Stop the trading simulation.
     """
-    global is_trading, trading_task, balance
+    global is_trading, trading_task, balance, id
     if is_trading:
         is_trading = False
         if trading_task:
             trading_task.cancel()  # Cancel the asyncio task if it is running
             trading_task = None
             balance = 10000  # Reset the balance
+            id = 0  # Reset the ID for broadcast messages
         print("Trading simulation stopped.")
         
 
@@ -180,7 +188,7 @@ def fetch_binance_historical_data(symbol, interval, limit=500):
 
     return df
 
-def generate_signal(historical_data, strategy, indicators):
+def generate_signal(historical_data, indicators):
     """
     Generates a trading signal ('BUY', 'SELL', 'HOLD') based on calculated indicator values and user-defined strategy.
 
@@ -192,6 +200,10 @@ def generate_signal(historical_data, strategy, indicators):
     Returns:
         str: 'BUY', 'SELL', or 'HOLD'
     """
+
+    # Get the user-defined strategy
+    strategy = get_strategy()
+
     # Validate inputs
     if historical_data.empty or "close" not in historical_data.columns:
         raise ValueError("Historical data is missing or does not contain a 'close' column.")
@@ -222,8 +234,8 @@ def generate_signal(historical_data, strategy, indicators):
         # Dynamic handling of indicators based on their names
         if ind_name == "rsi" and "rsi_value" in indicators:
             rsi_value = indicators["rsi_value"]
-            overbought = getattr(ind, "overbought", 70)
-            oversold = getattr(ind, "oversold", 30)
+            overbought = indicators["overbought"]
+            oversold = indicators["oversold"]
 
             # Debug: Print RSI values
             print(f"RSI Value: {rsi_value}, Overbought: {overbought}, Oversold: {oversold}")

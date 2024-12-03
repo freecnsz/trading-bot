@@ -19,9 +19,9 @@ class RSIIndicator(BaseModel):
         rsi = TA_RSIIndicator(close=data["close"], window=self.period)
         rsi_value = rsi.rsi().iloc[-1]
         return {
-            "value": rsi_value,
-            "is_overbought": rsi_value > self.overbought,
-            "is_oversold": rsi_value < self.oversold
+            "rsi_value": rsi_value,
+            "overbought": self.overbought,
+            "oversold": self.oversold
         }
 
 # SMA Crossover Gösterge Modeli
@@ -33,7 +33,9 @@ class SMAIndicator(BaseModel):
     def compute(self, data: pd.DataFrame):
         sma = TA_SMAIndicator(close=data["close"], window=self.period)
         sma_value = sma.sma_indicator().iloc[-1]
-        return {"value": sma_value}
+        return {
+            "sma_value": sma_value
+        }
 
 # MACD Gösterge Modeli
 class MACDIndicator(BaseModel):
