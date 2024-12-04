@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 from app.core.binance_client import BinanceClient
 from app.endpoints.websocket import broadcast_message
 from app.utils.indicators_calculations import calculate_indicators
@@ -52,6 +53,11 @@ async def trading_logic(symbol, interval):
         signal = generate_signal(historical_data, indicators)
         print(f"Signal: {signal}")
 
+        # Get the current time for logging
+        time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        print(f"Time: {time}, Signal: {signal}")
+
         # Step 5: Execute trades based on the signal
         if signal == "BUY" and balance > 0:
             # Simulate a buy
@@ -65,6 +71,7 @@ async def trading_logic(symbol, interval):
             ) * 100
             
 
+            
             # Broadcast BUY action
             await broadcast_message({
                 "id": id,
@@ -72,7 +79,7 @@ async def trading_logic(symbol, interval):
                 "symbol": symbol.upper(),
                 "price": live_data["close"],
                 "amount": amount,
-                "timestamp": live_data["timestamp"],
+                "timestamp": time,
                 "balance": balance,
                 "positions": positions,  # Send positions for better visibility
                 "profit_loss": unrealized_profit_loss_percent  # Potansiyel kar/zarar
@@ -98,7 +105,7 @@ async def trading_logic(symbol, interval):
                 "symbol": symbol.upper(),
                 "price": sell_price,
                 "amount": amount,
-                "timestamp": live_data["timestamp"],
+                "timestamp": time,
                 "balance": balance,
                 "profit_loss": profit_loss_percent,
                 "positions": positions  # Send remaining positions
@@ -247,13 +254,15 @@ def generate_signal(historical_data, indicators):
 
         elif ind_name == "sma crossover" and "sma_value" in indicators:
             sma_value = indicators["sma_value"]
+            upper_band = indicators["upper_band"]
+            lower_band = indicators["lower_band"]
 
             # Debug: Print SMA values
-            print(f"SMA Value: {sma_value}, Close Price: {close_price}")
+            print(f"SMA Value: {sma_value}, Close Price: {close_price}, Upper Band: {upper_band}, Lower Band: {lower_band}")
 
-            if close_price > sma_value:
+            if close_price > upper_band:
                 buy_signal = True
-            elif close_price < sma_value:
+            elif close_price < lower_band:
                 sell_signal = True
 
         elif ind_name == "macd" and "macd_value" in indicators and "signal_value" in indicators:

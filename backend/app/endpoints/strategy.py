@@ -33,8 +33,14 @@ class SMAIndicator(BaseModel):
     def compute(self, data: pd.DataFrame):
         sma = TA_SMAIndicator(close=data["close"], window=self.period)
         sma_value = sma.sma_indicator().iloc[-1]
+
+        upper_band = sma_value * (1 + self.deviation)
+        lower_band = sma_value * (1 - self.deviation)
+
         return {
-            "sma_value": sma_value
+            "sma_value": sma_value,
+            "upper_band": upper_band,
+            "lower_band": lower_band
         }
 
 # MACD Gösterge Modeli
