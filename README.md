@@ -1,7 +1,7 @@
 # Trading Bot
 
-<p align="center">
-  <img src="images/ss1.jpeg" alt="Trading Bot" width="300"/>
+<p >
+  <img src="images/ss1.jpeg" alt="Trading Bot"/>
 </p>
 
 This project is an automated trading bot developed using Python and React. It enables users to execute trades more effectively by applying predefined trading strategies.
